@@ -13,7 +13,9 @@ XF = 0.4  # crossfade (s)
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out", nargs="?", default=os.path.join(BASE, "out", "jogos_do_dia.mp4"))
-    ap.add_argument("--loop-min", type=float, default=60.0, help="duração mínima do vídeo final (min); 0 = um ciclo só")
+    ap.add_argument("--loop-min", type=float, default=30.0, help="duração mínima do vídeo final (min); 0 = um ciclo só")
+    ap.add_argument("--scale", default="540:960", help="WxH do vídeo final (vazio = manter 1080x1920)")
+    ap.add_argument("--crf", default="26", help="CRF do vídeo final")
     ap.add_argument("--sem-musica", action="store_true")
     args = ap.parse_args()
     manifest = json.load(open(os.path.join(FR, "manifest.json")))
@@ -41,6 +43,17 @@ def main():
         "-t", f"{total_ciclo:.2f}", ciclo]
     subprocess.run(cmd, check=True)
     print(f"ciclo: {total_ciclo:.1f}s -> {ciclo}")
+
+    # Re-encoda o ciclo menor/mais leve: a rota /live/ do painel faz probe da
+    # origem com timeout ~7s; acima de ~200MB (GitHub ~30MB/s) a rota dá 503.
+    # 540x960 crf 26 x 30min ~= 164MB -> probe ~6s (Ep 01, 83MB, passa folgado).
+    ciclo_out = os.path.join(FR, "ciclo_final.mp4")
+    cmd = ["ffmpeg", "-y", "-v", "error", "-i", ciclo]
+    if args.scale:
+        cmd += ["-vf", f"scale={args.scale}"]
+    cmd += ["-c:v", "libx264", "-preset", "medium", "-crf", args.crf, "-pix_fmt", "yuv420p", ciclo_out]
+    subprocess.run(cmd, check=True)
+    ciclo = ciclo_out
 
     repeats = max(1, math.ceil(args.loop_min * 60 / total_ciclo)) if args.loop_min > 0 else 1
     total = repeats * total_ciclo
