@@ -42,7 +42,7 @@ CONFIG = {
     "fps": 30,
 }
 
-# Temas visuais (modelos de referência do Diego; ambos aprovados como estilo)
+# Temas visuais (modelos de referência; tema ativo escolhido pelo Pastor via Instinct: usar o existente e manter trocável)
 TEMAS = {
     "agenda": {  # estádio + faixas, acento verde-lima
         "titulo_a": "AGENDA", "titulo_b": "EM CAMPO.",
@@ -321,6 +321,7 @@ def main():
     jogos = expandir_linhas(jogos_do_dia(data_alvo), canais_verificados(data_alvo))
     print(f"{len(jogos)} linhas (jogo x canal) em {data_alvo:%d/%m/%Y} (BRT)")
     for j in jogos: print("  ", j["horario"], j["time1"], "x", j["time2"], "-", j.get("canal") or j["liga"], "" if j.get("canal_verificado") else "(padrão, a confirmar)")
+    manifest = []
     if not jogos:
         # sem jogos: capa sem escudos + quadro final (o canal nunca fica parado)
         print("SEM JOGOS - renderiza capa generica")
@@ -329,7 +330,6 @@ def main():
         p1 = os.path.join(FR, "p01_pre.png"); p2 = os.path.join(FR, "p01_full.png")
         pre.convert("RGB").save(p1); full.convert("RGB").save(p2)
         manifest += [(p1, CONFIG["seg_pre"]), (p2, CONFIG["seg_full"])]
-    manifest = []
     for i, j in enumerate(jogos, 1):
         pre = pagina(j, i, len(jogos), data_alvo, completo=False, tema=args.tema)
         full = pagina(j, i, len(jogos), data_alvo, completo=True, tema=args.tema)
