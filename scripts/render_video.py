@@ -259,6 +259,12 @@ def pagina(jogo, idx, total, data_alvo, completo=True, tema="agenda"):
         f_p = font("BarlowCondensed-Bold.ttf", k(14))
         pg = f"{idx:02d}/{total:02d}"
         dd.text((k(66), k(518)), pg, font=f_p, fill=acc)
+    else:
+        # dia sem jogos: aviso escopado às competições acompanhadas (nunca "sem futebol" em geral)
+        f_s = font("Anton-Regular.ttf", k(30))
+        yy = crest_top + k(120)
+        for i, ln in enumerate(("SEM JOGOS DAS COMPETIÇÕES", "ACOMPANHADAS HOJE")):
+            dd.text((W / 2 - dd.textlength(ln, font=f_s) / 2, yy + i * k(46)), ln, font=f_s, fill=acc if i == 0 else (255, 255, 255))
     # rodapé
     dd.rectangle([0, k(888), W, H], fill=CONFIG["rodape_cor"])
     f_w = font("Anton-Regular.ttf", k(20))
