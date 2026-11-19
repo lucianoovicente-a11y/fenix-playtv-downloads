@@ -168,12 +168,20 @@
   function fmt(n){ if(n>1048576) return (n/1048576).toFixed(1)+' MB/s'; if(n>1024) return (n/1024).toFixed(0)+' KB/s'; return n+' B/s'; }
   function fmtB(n){ if(n>1073741824) return (n/1073741824).toFixed(2)+' GB'; if(n>1048576) return (n/1048576).toFixed(1)+' MB'; return (n/1024).toFixed(0)+' KB'; }
 
-  function entrar(){
+  async function entrar(){
     const cod = $('codigo').value.trim();
     erro.textContent='';
     if(!cod){ erro.textContent='Digite o código.'; return; }
-    if(reg.usuarios[cod]){ usuario = {codigo:cod, nome:reg.usuarios[cod].nome||''}; abrirCatalogo(); return; }
-    if(reg.itens[cod]){ loading.style.display='block'; abrirPlayer(reg.itens[cod]); return; }
+    loading.style.display='block';
+    // valida o código de usuário na API; se a API estiver fora, usa a lista local
+    try{
+      const r = await fetch('api.php', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({acao:'validar', codigo:cod})});
+      const j = await r.json();
+      if(j.ok){ usuario = {codigo:cod, nome:j.nome||''}; loading.style.display='none'; abrirCatalogo(); return; }
+    }catch(e){}
+    if(reg.usuarios[cod]){ usuario = {codigo:cod, nome:reg.usuarios[cod].nome||''}; loading.style.display='none'; abrirCatalogo(); return; }
+    if(reg.itens[cod]){ abrirPlayer(reg.itens[cod]); return; }
+    loading.style.display='none';
     erro.textContent='Código não encontrado. Confira e tente de novo.';
   }
 

@@ -6,10 +6,11 @@
 <title>Fênix P2P — Administração</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; }
   body {
-    font-family:'Segoe UI',Arial,sans-serif; min-height:100vh; color:#fff;
+    font-family: 'Segoe UI', Arial, sans-serif;
     background: radial-gradient(ellipse at 50% 30%, #12305e 0%, #091425 65%, #050b16 100%);
-    display:flex; flex-direction:column; align-items:center; padding:24px 14px 40px;
+    color:#fff; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 14px 40px;
     -webkit-tap-highlight-color:transparent;
   }
   h1 { font-size:24px; letter-spacing:2px; margin:10px 0 2px;
@@ -32,11 +33,21 @@
     cursor:pointer; color:#1a0e00; background:linear-gradient(180deg,#ffc23c,#ff8a00);
   }
   .btn.sec { background:rgba(255,255,255,.12); color:#fff; font-weight:600; margin-left:8px; }
+  .btn.mini { font-size:13px; padding:7px 12px; border-radius:9px; margin-left:6px; }
   .erro { color:#ff8a80; font-size:14px; margin-top:10px; min-height:18px; }
   .ok { color:#8dffa8; font-size:14px; margin-top:10px; min-height:18px; }
   .atual { font-size:14px; color:#ffd88a; word-break:break-all; margin-bottom:12px; }
   .voltarLink { color:#7fb3ff; font-size:14px; text-decoration:none; margin-top:6px; display:inline-block; }
   code { background:rgba(0,0,0,.4); padding:2px 7px; border-radius:6px; color:#ffd88a; font-size:13px; }
+  .usr {
+    display:flex; align-items:center; gap:8px; padding:11px 12px; margin-bottom:8px;
+    background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.1); border-radius:12px;
+  }
+  .usr .cod { font-size:18px; font-weight:700; color:#ffb300; letter-spacing:2px; min-width:58px; }
+  .usr .nm { flex:1; font-size:14.5px; color:#fff; overflow:hidden; text-overflow:ellipsis; }
+  .usr .bl { font-size:11.5px; color:#ff8a80; border:1px solid rgba(255,138,128,.5); border-radius:99px; padding:2px 8px; }
+  .usr .mini { background:rgba(255,255,255,.12); color:#fff; border:none; font-size:12.5px; padding:6px 10px; border-radius:8px; cursor:pointer; }
+  .usr .mini.danger { color:#ff8a80; }
 </style>
 </head>
 <body>
@@ -51,6 +62,16 @@
   </div>
 
   <div id="adminArea" style="display:none; width:100%; max-width:560px;">
+    <div class="card">
+      <div class="lbl">Usuários P2P</div>
+      <div class="txt" style="margin-bottom:12px;">Cada código libera todo o catálogo no site. O tipo IPTV continua sendo criado no painel StreamFlow.</div>
+      <input id="novoNome" class="campo" type="text" placeholder="Nome do usuário">
+      <button class="btn" id="criar">CRIAR CÓDIGO P2P</button>
+      <div class="ok" id="okUsr"></div>
+      <div class="erro" id="erroUsr"></div>
+      <div id="listaUsr" style="margin-top:14px;"></div>
+    </div>
+
     <div class="card">
       <div class="lbl">Servidor da lista de conteúdos</div>
       <div class="txt" style="margin-bottom:10px;">O site busca a lista (códigos, séries, filmes e canais) neste endereço:</div>
@@ -79,32 +100,66 @@
 <script>
 (function(){
   const $ = id => document.getElementById(id);
-  const HASH = '8887f55737e775b07856be38d0de1f167f5498515adc162b45395c9b605a516c';
-  async function sha(s){
-    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-    return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
-  }
+  const API = 'api.php';
+  let token = sessionStorage.getItem('fenixp2p_admin') || '';
   const PADRAO = location.origin + location.pathname.replace(/[^/]*$/,'') + 'canais.json';
   function atual(){ return localStorage.getItem('fenixp2p_servidor') || PADRAO; }
+  async function api(corpo){
+    const r = await fetch(API, {method:'POST', headers:{'Content-Type':'application/json','X-Admin-Token':token}, body:JSON.stringify(corpo)});
+    return r.json();
+  }
 
   async function entrar(){
     $('erroLogin').textContent='';
-    const h = await sha($('senha').value);
-    if(h === HASH){
+    const r = await fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({acao:'login', senha:$('senha').value})});
+    const j = await r.json();
+    if(j.ok){
+      token = j.token; sessionStorage.setItem('fenixp2p_admin', token);
       $('loginCard').style.display='none'; $('adminArea').style.display='block';
       $('atual').textContent = atual();
-    } else { $('erroLogin').textContent='Senha incorreta.'; }
+      listar();
+    } else { $('erroLogin').textContent = j.erro || 'Senha incorreta.'; }
   }
   $('entrar').onclick = entrar;
   $('senha').addEventListener('keydown', e=>{ if(e.key==='Enter') entrar(); });
 
+  async function listar(){
+    const j = await api({acao:'listar'});
+    const box = $('listaUsr'); box.innerHTML='';
+    if(!j.ok){ box.innerHTML=''; return; }
+    const us = j.usuarios||{};
+    const cods = Object.keys(us).sort();
+    if(!cods.length){ box.innerHTML='<div class="txt">Nenhum usuário P2P ainda.</div>'; return; }
+    cods.forEach(c=>{
+      const u = us[c];
+      const d = document.createElement('div'); d.className='usr';
+      const s1 = document.createElement('span'); s1.className='cod'; s1.textContent=c;
+      const s2 = document.createElement('span'); s2.className='nm'; s2.textContent=u.nome||'';
+      d.appendChild(s1); d.appendChild(s2);
+      if(u.bloqueado){ const b=document.createElement('span'); b.className='bl'; b.textContent='bloqueado'; d.appendChild(b); }
+      const bb = document.createElement('button'); bb.className='mini'; bb.textContent = u.bloqueado?'Desbloquear':'Bloquear';
+      bb.onclick = async ()=>{ await api({acao:u.bloqueado?'desbloquear':'bloquear', codigo:c}); listar(); };
+      const bx = document.createElement('button'); bx.className='mini danger'; bx.textContent='Excluir';
+      bx.onclick = async ()=>{ if(confirm('Excluir o código '+c+'?')){ await api({acao:'excluir', codigo:c}); listar(); } };
+      d.appendChild(bb); d.appendChild(bx);
+      box.appendChild(d);
+    });
+  }
+  $('criar').onclick = async ()=>{
+    $('okUsr').textContent=''; $('erroUsr').textContent='';
+    const nome = $('novoNome').value.trim();
+    if(!nome){ $('erroUsr').textContent='Digite o nome do usuário.'; return; }
+    const j = await api({acao:'criar', nome:nome});
+    if(j.ok){ $('okUsr').textContent = 'Código P2P criado: ' + j.codigo + ' (' + j.nome + ')'; $('novoNome').value=''; listar(); }
+    else $('erroUsr').textContent = j.erro || 'Não consegui criar.';
+  };
+
   $('salvar').onclick = ()=>{
     const v = $('novoServidor').value.trim();
-    $('okMsg').textContent=''; $('erroMsg').textContent='';
-    if(!/^https:\/\/.+/.test(v)){ $('erroMsg').textContent='Digite um endereço completo começando com https://'; return; }
+    if(!v.startsWith('https://')){ $('erroMsg').textContent='Digite um endereço completo começando com https://'; return; }
     localStorage.setItem('fenixp2p_servidor', v);
     $('atual').textContent = atual();
-    $('okMsg').textContent='Servidor salvo neste aparelho.';
+    $('okMsg').textContent='Servidor salvo neste aparelho.'; $('erroMsg').textContent='';
   };
   $('padrao').onclick = ()=>{
     localStorage.removeItem('fenixp2p_servidor');
@@ -120,6 +175,12 @@
       $('okMsg').textContent = 'Servidor respondendo: '+n+' conteúdo(s) na lista.';
     }catch(e){ $('okMsg').textContent=''; $('erroMsg').textContent='Não consegui ler a lista nesse endereço.'; }
   };
+
+  if(token){
+    api({acao:'listar'}).then(j=>{
+      if(j.ok){ $('loginCard').style.display='none'; $('adminArea').style.display='block'; $('atual').textContent = atual(); listar(); }
+    });
+  }
 })();
 </script>
 </body>
