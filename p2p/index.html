@@ -130,7 +130,9 @@
     torrent = client.add(item.torrent || item.magnet, t=>{
       const file = t.files.find(f=>f.name.endsWith('.mp4')) || t.files[0];
       const v=$('video');
+      try{ const pl=t.pieceLength; t.select(0, Math.ceil(4194304/pl), 1); }catch(e){}
       file.renderTo(v, {autoplay:false}, err=>{ if(err){ $('status').textContent='Preparando o vídeo...'; } });
+      t.on('done', ()=>{ if(v.readyState<2){ file.getBlobURL((e,url)=>{ if(!e && url){ v.src=url; } }); } });
       const hideOv=()=>{ $('playOverlay').style.display='none'; };
       $('playOverlay').addEventListener('click', ()=>{ v.play().catch(()=>{}); });
       v.addEventListener('play', hideOv);
