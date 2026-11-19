@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Fênix Play TV — P2P</title>
+<title>Fênix P2P — Luciano Vicente</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   html,body { height:100%; }
@@ -14,16 +14,19 @@
     -webkit-tap-highlight-color: transparent;
   }
   .logo { width:130px; height:130px; object-fit:contain; margin-bottom:10px; filter: drop-shadow(0 0 18px rgba(255,140,0,.55)); }
+  .logo.sm { width:54px; height:54px; margin-bottom:0; }
   h1 {
     font-size:30px; letter-spacing:2px; margin-bottom:4px; text-align:center;
     background: linear-gradient(90deg,#ffb300,#ff6a00,#ffb300);
     -webkit-background-clip:text; background-clip:text; color:transparent;
     text-shadow: 0 0 22px rgba(255,140,0,.25);
   }
+  h1.sm { font-size:22px; margin-bottom:0; text-align:left; }
   .p2ptag {
     font-size:14px; letter-spacing:6px; color:#7fb3ff; margin-bottom:34px; font-weight:600;
     border:1px solid rgba(127,179,255,.35); border-radius:999px; padding:6px 18px;
   }
+  .dono { font-size:13px; color:#9fc1e8; margin-top:-26px; margin-bottom:30px; letter-spacing:1px; }
   .card {
     background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
     border-radius:22px; padding:30px 28px; width:min(420px, 92vw); text-align:center;
@@ -33,7 +36,7 @@
   input.codigo {
     width:100%; font-size:34px; text-align:center; letter-spacing:10px; padding:14px 10px 14px 20px;
     border-radius:14px; border:2px solid rgba(255,179,0,.55); background:rgba(0,0,0,.35); color:#ffd88a;
-    outline:none; margin-bottom:18px; font-weight:700;
+    outline:none; margin-bottom:18px; font-weight:700; text-transform:uppercase;
   }
   input.codigo:focus { border-color:#ffb300; box-shadow:0 0 0 3px rgba(255,179,0,.25); }
   .btn {
@@ -42,17 +45,53 @@
     background: linear-gradient(180deg,#ffc23c,#ff8a00); box-shadow:0 6px 18px rgba(255,138,0,.35);
   }
   .btn:active { transform:scale(.97); }
-  .btn.sec { background: rgba(255,255,255,.12); color:#fff; box-shadow:none; font-size:16px; padding:11px 0; margin-top:12px; }
   .erro { color:#ff8a80; margin-top:14px; font-size:15px; min-height:20px; }
+  .loading { margin-top:16px; font-size:15px; color:#9fc1e8; }
+  .spin { display:inline-block; width:18px; height:18px; border:3px solid rgba(255,179,0,.3); border-top-color:#ffb300; border-radius:50%; animation:sp 0.9s linear infinite; vertical-align:-4px; margin-right:8px; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+
+  /* catalogo */
+  #catalogWrap { display:none; width:100%; min-height:100vh; flex-direction:column; }
+  #catHeader {
+    display:flex; align-items:center; gap:14px; padding:16px 18px;
+    background:rgba(9,20,37,.85); border-bottom:1px solid rgba(255,255,255,.08);
+    position:sticky; top:0; z-index:10; backdrop-filter: blur(6px);
+  }
+  #catHeader .hi { margin-left:auto; font-size:14px; color:#ffd88a; white-space:nowrap; }
+  #sair { background:rgba(255,255,255,.12); color:#fff; border:none; border-radius:10px; padding:8px 14px; font-size:14px; cursor:pointer; margin-left:10px; }
+  #catBody { padding:18px 16px 40px; width:min(980px,100%); margin:0 auto; }
+  .catSec { margin-bottom:28px; }
+  .catSec h2 {
+    font-size:19px; letter-spacing:1.5px; margin-bottom:12px; color:#ffb300;
+    border-left:4px solid #ff8a00; padding-left:10px; text-transform:uppercase;
+  }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .vazio {
+    color:#7d93b3; font-size:14.5px; padding:16px; border:1px dashed rgba(255,255,255,.18);
+    border-radius:14px; text-align:center;
+  }
+  .item {
+    background: linear-gradient(160deg, rgba(255,179,0,.14), rgba(18,48,94,.55) 55%);
+    border:1px solid rgba(255,179,0,.28); border-radius:16px; padding:16px 14px; cursor:pointer;
+    display:flex; flex-direction:column; gap:8px; min-height:130px; transition:transform .12s;
+  }
+  .item:active { transform:scale(.97); }
+  .item .playTag {
+    width:38px; height:38px; border-radius:50%; background:linear-gradient(180deg,#ffc23c,#ff8a00);
+    color:#1a0e00; font-size:16px; display:flex; align-items:center; justify-content:center; padding-left:3px;
+  }
+  .item .t { font-size:14.5px; font-weight:700; color:#fff; line-height:1.25; }
+  .item .s { font-size:12.5px; color:#9fc1e8; }
+
   /* player */
   #playerWrap { display:none; width:100vw; height:100vh; flex-direction:column; background:#000; }
   #topbar {
-    display:flex; align-items:center; gap:12px; padding:10px 14px;
-    background: rgba(9,20,37,.92); border-bottom:1px solid rgba(255,255,255,.1);
+    display:flex; align-items:center; gap:12px; padding:8px 12px;
+    background:rgba(9,20,37,.92); border-bottom:1px solid rgba(255,255,255,.08);
   }
-  #topbar .t { font-size:16px; font-weight:600; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #topbar .t { flex:1; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #voltar { background:rgba(255,255,255,.12); color:#fff; border:none; border-radius:10px; padding:8px 16px; font-size:15px; cursor:pointer; }
-  #videoBox { flex:1; display:flex; align-items:center; justify-content:center; min-height:0; }
+  #videoBox { flex:1; display:flex; align-items:center; justify-content:center; min-height:0; position:relative; }
   video { width:100%; height:100%; object-fit:contain; background:#000; }
   #stats {
     display:flex; justify-content:center; gap:26px; padding:10px; font-size:13.5px; color:#9fc1e8;
@@ -60,25 +99,31 @@
   }
   #stats b { color:#ffd88a; font-weight:700; }
   #status { padding:6px; text-align:center; font-size:13px; color:#7fb3ff; background:rgba(9,20,37,.92); }
-  .loading { margin-top:16px; font-size:15px; color:#9fc1e8; }
   #playOverlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,.55); cursor:pointer; z-index:5; }
   #playBtn { width:90px; height:90px; border-radius:50%; background:linear-gradient(180deg,#ffc23c,#ff8a00); color:#1a0e00; font-size:40px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 30px rgba(255,138,0,.6); padding-left:8px; }
   .playTxt { margin-top:14px; font-size:16px; color:#ffd88a; }
-  #videoBox { position:relative; }
-  .spin { display:inline-block; width:18px; height:18px; border:3px solid rgba(255,179,0,.3); border-top-color:#ffb300; border-radius:50%; animation:sp 0.9s linear infinite; vertical-align:-4px; margin-right:8px; }
-  @keyframes sp { to { transform:rotate(360deg); } }
 </style>
 </head>
 <body>
   <div id="codeScreen" class="card" style="display:flex; flex-direction:column; align-items:center;">
     <img class="logo" src="../scripts/assets/fenix_logo.png" alt="Fênix" onerror="this.style.display='none'">
-    <h1>FÊNIX PLAY TV</h1>
-    <div class="p2ptag">P2P</div>
-    <div class="lbl">Digite o código do conteúdo</div>
-    <input id="codigo" class="codigo" type="tel" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="•••">
-    <button class="btn" id="entrar">ASSISTIR</button>
+    <h1>FÊNIX P2P</h1>
+    <div class="p2ptag">LUCIANO VICENTE</div>
+    <div class="lbl">Digite seu código</div>
+    <input id="codigo" class="codigo" type="text" inputmode="text" maxlength="8" autocomplete="off" placeholder="•••">
+    <button class="btn" id="entrar">ENTRAR</button>
     <div class="erro" id="erro"></div>
     <div class="loading" id="loading" style="display:none;"><span class="spin"></span>Conectando...</div>
+  </div>
+
+  <div id="catalogWrap">
+    <div id="catHeader">
+      <img class="logo sm" src="../scripts/assets/fenix_logo.png" alt="Fênix" onerror="this.style.display='none'">
+      <h1 class="sm">FÊNIX P2P</h1>
+      <div class="hi" id="saudacao"></div>
+      <button id="sair">Sair</button>
+    </div>
+    <div id="catBody"></div>
   </div>
 
   <div id="playerWrap">
@@ -99,14 +144,16 @@
 <script>
 (function(){
   const $ = id => document.getElementById(id);
-  const codeScreen=$('codeScreen'), playerWrap=$('playerWrap'), erro=$('erro'), loading=$('loading');
-  let client=null, torrent=null, reg=null, statsTimer=null;
+  const codeScreen=$('codeScreen'), catalogWrap=$('catalogWrap'), playerWrap=$('playerWrap'), erro=$('erro'), loading=$('loading');
+  let client=null, torrent=null, reg=null, statsTimer=null, usuario=null;
+
+  const CATS = [['series','Séries'],['filmes','Filmes'],['canais','Canais']];
 
   const autoCode = new URLSearchParams(location.search).get('c');
   fetch('canais.json', {cache:'no-store'}).then(r=>r.json()).then(j=>{
-    reg=j.canais||{};
+    reg = { usuarios: j.usuarios||{}, itens: j.itens||j.canais||{} };
     if(autoCode){ $('codigo').value=autoCode; entrar(); }
-  }).catch(()=>{ reg={}; });
+  }).catch(()=>{ reg={usuarios:{},itens:{}}; });
 
   function fmt(n){ if(n>1048576) return (n/1048576).toFixed(1)+' MB/s'; if(n>1024) return (n/1024).toFixed(0)+' KB/s'; return n+' B/s'; }
   function fmtB(n){ if(n>1073741824) return (n/1073741824).toFixed(2)+' GB'; if(n>1048576) return (n/1048576).toFixed(1)+' MB'; return (n/1024).toFixed(0)+' KB'; }
@@ -115,33 +162,64 @@
     const cod = $('codigo').value.trim();
     erro.textContent='';
     if(!cod){ erro.textContent='Digite o código.'; return; }
-    if(!reg || !reg[cod]){ erro.textContent='Código não encontrado. Confira e tente de novo.'; return; }
-    loading.style.display='block';
-    const item = reg[cod];
-    abrirPlayer(item);
+    if(reg.usuarios[cod]){ usuario = {codigo:cod, nome:reg.usuarios[cod].nome||''}; abrirCatalogo(); return; }
+    if(reg.itens[cod]){ loading.style.display='block'; abrirPlayer(reg.itens[cod]); return; }
+    erro.textContent='Código não encontrado. Confira e tente de novo.';
+  }
+
+  function abrirCatalogo(){
+    codeScreen.style.display='none'; playerWrap.style.display='none'; catalogWrap.style.display='flex';
+    $('saudacao').textContent = usuario.nome ? ('Olá, '+usuario.nome+'!') : '';
+    const body=$('catBody'); body.innerHTML='';
+    const porCat = {};
+    Object.keys(reg.itens).forEach(cod=>{
+      const it=reg.itens[cod]; const cat=it.categoria||'series';
+      (porCat[cat]=porCat[cat]||[]).push({cod:cod, it:it});
+    });
+    CATS.forEach(([key,label])=>{
+      const sec=document.createElement('div'); sec.className='catSec';
+      const h=document.createElement('h2'); h.textContent=label; sec.appendChild(h);
+      const lista=porCat[key]||[];
+      if(!lista.length){
+        const v=document.createElement('div'); v.className='vazio'; v.textContent='Em breve novos conteúdos aqui.'; sec.appendChild(v);
+      } else {
+        const g=document.createElement('div'); g.className='grid';
+        lista.forEach(({cod,it})=>{
+          const d=document.createElement('div'); d.className='item';
+          const p=document.createElement('div'); p.className='playTag'; p.textContent='▶';
+          const t=document.createElement('div'); t.className='t'; t.textContent=it.serie||it.titulo;
+          const s=document.createElement('div'); s.className='s'; s.textContent=it.episodio||it.titulo;
+          d.appendChild(p); d.appendChild(t); d.appendChild(s);
+          d.onclick=()=>{ abrirPlayer(it); };
+          g.appendChild(d);
+        });
+        sec.appendChild(g);
+      }
+      body.appendChild(sec);
+    });
   }
 
   function abrirPlayer(item){
     $('titulo').textContent = item.titulo;
-    codeScreen.style.display='none'; playerWrap.style.display='flex';
-    if(client){ try{client.destroy();}catch(e){} }
+    codeScreen.style.display='none'; catalogWrap.style.display='none'; playerWrap.style.display='flex';
+    $('playOverlay').style.display='flex';
+    if(client){ try{client.destroy();}catch(e){} client=null; }
     client = new WebTorrent();
     client.on('error', ()=>{ $('status').textContent='Conteúdo indisponível no momento.'; });
     torrent = client.add(item.torrent || item.magnet, t=>{
       const file = t.files.find(f=>f.name.endsWith('.mp4')) || t.files[0];
       const v=$('video');
-      try{ const pl=t.pieceLength; t.select(0, Math.ceil(4194304/pl), 1); }catch(e){}
-      file.renderTo(v, {autoplay:false}, err=>{ if(err){ $('status').textContent='Preparando o vídeo...'; } });
-      t.on('done', ()=>{ if(v.readyState<2){ file.getBlobURL((e,url)=>{ if(!e && url){ v.src=url; } }); } });
-      const hideOv=()=>{ $('playOverlay').style.display='none'; };
-      $('playOverlay').addEventListener('click', ()=>{ v.play().catch(()=>{}); });
-      v.addEventListener('play', hideOv);
-      v.addEventListener('click', ()=>{ if(v.paused) v.play().catch(()=>{}); });
+      try{ const pl=t.pieceLength; t.select(0, Math.min(pl*8, t.length)); }catch(e){}
+      file.renderTo(v, {autoplay:false});
+      t.on('done', ()=>{
+        $('status').textContent='Download concluído. Compartilhando com outras pessoas.';
+        if(v.readyState===0){ file.getBlobURL((e,url)=>{ if(!e&&url && v.readyState===0) v.src=url; }); }
+      });
       $('status').textContent = 'Carregando vídeo via P2P...';
-      t.on('done', ()=>{ $('status').textContent='Download concluído. Compartilhando com outras pessoas.'; });
       t.on('wire', ()=>{ $('status').textContent='Assistindo via P2P — quanto mais gente, mais leve fica para o servidor.'; });
     });
     let stall=0;
+    clearInterval(statsTimer);
     statsTimer = setInterval(()=>{
       if(!torrent) return;
       $('peers').textContent = torrent.numPeers;
@@ -150,19 +228,28 @@
       if(torrent.downloaded>0 || torrent.numPeers>0){ stall=0; loading.style.display='none'; }
       else if(++stall>=15){ $('status').textContent='Ainda conectando... aguarde um instante.'; }
     },1000);
-    $('video').addEventListener('playing', ()=>{ $('status').textContent=''; });
   }
+
+  $('playOverlay').addEventListener('click', ()=>{ const v=$('video'); v.play().catch(()=>{}); });
+  $('video').addEventListener('play', ()=>{ $('playOverlay').style.display='none'; });
+  $('video').addEventListener('playing', ()=>{ $('status').textContent=''; });
 
   function voltar(){
     clearInterval(statsTimer);
     if(client){ try{client.destroy();}catch(e){} client=null; torrent=null; }
-    $('video').pause(); $('video').removeAttribute('src'); $('video').load();
-    playerWrap.style.display='none'; codeScreen.style.display='flex';
-    loading.style.display='none'; $('codigo').value=''; $('codigo').focus();
+    const v=$('video'); v.pause(); v.removeAttribute('src'); v.load();
+    playerWrap.style.display='none'; loading.style.display='none';
+    if(usuario){ abrirCatalogo(); }
+    else { codeScreen.style.display='flex'; $('codigo').value=''; $('codigo').focus(); }
+  }
+
+  function sair(){
+    usuario=null; voltar();
   }
 
   $('entrar').onclick = entrar;
   $('voltar').onclick = voltar;
+  $('sair').onclick = sair;
   $('codigo').addEventListener('keydown', e=>{ if(e.key==='Enter') entrar(); });
   $('codigo').focus();
 })();
