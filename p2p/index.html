@@ -98,7 +98,11 @@
   const codeScreen=$('codeScreen'), playerWrap=$('playerWrap'), erro=$('erro'), loading=$('loading');
   let client=null, torrent=null, reg=null, statsTimer=null;
 
-  fetch('canais.json', {cache:'no-store'}).then(r=>r.json()).then(j=>{ reg=j.canais||{}; }).catch(()=>{ reg={}; });
+  const autoCode = new URLSearchParams(location.search).get('c');
+  fetch('canais.json', {cache:'no-store'}).then(r=>r.json()).then(j=>{
+    reg=j.canais||{};
+    if(autoCode){ $('codigo').value=autoCode; entrar(); }
+  }).catch(()=>{ reg={}; });
 
   function fmt(n){ if(n>1048576) return (n/1048576).toFixed(1)+' MB/s'; if(n>1024) return (n/1024).toFixed(0)+' KB/s'; return n+' B/s'; }
   function fmtB(n){ if(n>1073741824) return (n/1073741824).toFixed(2)+' GB'; if(n>1048576) return (n/1048576).toFixed(1)+' MB'; return (n/1024).toFixed(0)+' KB'; }
@@ -119,7 +123,7 @@
     if(client){ try{client.destroy();}catch(e){} }
     client = new WebTorrent();
     client.on('error', ()=>{ $('status').textContent='Conteúdo indisponível no momento.'; });
-    torrent = client.add(item.magnet, t=>{
+    torrent = client.add(item.torrent || item.magnet, t=>{
       const file = t.files.find(f=>f.name.endsWith('.mp4')) || t.files[0];
       file.renderTo($('video'), {autoplay:true, muted:false}, err=>{
         if(err){ $('video').src = file.getBlobURL ? '' : ''; }
