@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fênix P2P — Administração</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Segoe UI',Arial,sans-serif; min-height:100vh; color:#fff;
+    background: radial-gradient(ellipse at 50% 30%, #12305e 0%, #091425 65%, #050b16 100%);
+    display:flex; flex-direction:column; align-items:center; padding:24px 14px 40px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  h1 { font-size:24px; letter-spacing:2px; margin:10px 0 2px;
+    background:linear-gradient(90deg,#ffb300,#ff6a00,#ffb300);
+    -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub { font-size:13px; letter-spacing:3px; color:#7fb3ff; margin-bottom:22px; font-weight:600; }
+  .card {
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:18px;
+    padding:22px; width:min(560px,94vw); margin-bottom:18px; box-shadow:0 12px 40px rgba(0,0,0,.4);
+  }
+  .lbl { font-size:15px; color:#dfe9f5; margin-bottom:10px; font-weight:600; }
+  .txt { font-size:13.5px; color:#9fc1e8; line-height:1.5; }
+  input.campo {
+    width:100%; font-size:17px; padding:12px 14px; border-radius:12px; color:#ffd88a;
+    border:2px solid rgba(255,179,0,.55); background:rgba(0,0,0,.35); outline:none; margin-bottom:12px;
+  }
+  input.campo:focus { border-color:#ffb300; }
+  .btn {
+    display:inline-block; font-size:16px; font-weight:700; padding:12px 22px; border:none; border-radius:12px;
+    cursor:pointer; color:#1a0e00; background:linear-gradient(180deg,#ffc23c,#ff8a00);
+  }
+  .btn.sec { background:rgba(255,255,255,.12); color:#fff; font-weight:600; margin-left:8px; }
+  .erro { color:#ff8a80; font-size:14px; margin-top:10px; min-height:18px; }
+  .ok { color:#8dffa8; font-size:14px; margin-top:10px; min-height:18px; }
+  .atual { font-size:14px; color:#ffd88a; word-break:break-all; margin-bottom:12px; }
+  .voltarLink { color:#7fb3ff; font-size:14px; text-decoration:none; margin-top:6px; display:inline-block; }
+  code { background:rgba(0,0,0,.4); padding:2px 7px; border-radius:6px; color:#ffd88a; font-size:13px; }
+</style>
+</head>
+<body>
+  <h1>FÊNIX P2P</h1>
+  <div class="sub">ADMINISTRAÇÃO</div>
+
+  <div class="card" id="loginCard">
+    <div class="lbl">Senha de administrador</div>
+    <input id="senha" class="campo" type="password" autocomplete="off" placeholder="••••••••">
+    <button class="btn" id="entrar">ENTRAR</button>
+    <div class="erro" id="erroLogin"></div>
+  </div>
+
+  <div id="adminArea" style="display:none; width:100%; max-width:560px;">
+    <div class="card">
+      <div class="lbl">Servidor da lista de conteúdos</div>
+      <div class="txt" style="margin-bottom:10px;">O site busca a lista (códigos, séries, filmes e canais) neste endereço:</div>
+      <div class="atual" id="atual"></div>
+      <input id="novoServidor" class="campo" type="url" placeholder="https://outroservidor.com/canais.json">
+      <button class="btn" id="salvar">SALVAR SERVIDOR</button>
+      <button class="btn sec" id="padrao">Voltar ao padrão</button>
+      <button class="btn sec" id="testar">Testar</button>
+      <div class="ok" id="okMsg"></div>
+      <div class="erro" id="erroMsg"></div>
+    </div>
+
+    <div class="card">
+      <div class="lbl">Trocar o servidor para todo mundo (DNS)</div>
+      <div class="txt">
+        Para que TODOS os aparelhos passem a usar outro servidor, a troca é feita no DNS da Cloudflare:
+        aponte o subdomínio <code>fenixp2p.totalmente.online</code> para o servidor novo.
+        Os arquivos do site precisam estar também no servidor novo (eu subo para você quando pedir).
+        Enquanto o DNS aponta aqui, a opção acima muda o servidor apenas neste aparelho, para teste.
+      </div>
+    </div>
+
+    <a class="voltarLink" href="index.html">◀ Voltar para o site</a>
+  </div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const HASH = '8887f55737e775b07856be38d0de1f167f5498515adc162b45395c9b605a516c';
+  async function sha(s){
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+    return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+  }
+  const PADRAO = location.origin + location.pathname.replace(/[^/]*$/,'') + 'canais.json';
+  function atual(){ return localStorage.getItem('fenixp2p_servidor') || PADRAO; }
+
+  async function entrar(){
+    $('erroLogin').textContent='';
+    const h = await sha($('senha').value);
+    if(h === HASH){
+      $('loginCard').style.display='none'; $('adminArea').style.display='block';
+      $('atual').textContent = atual();
+    } else { $('erroLogin').textContent='Senha incorreta.'; }
+  }
+  $('entrar').onclick = entrar;
+  $('senha').addEventListener('keydown', e=>{ if(e.key==='Enter') entrar(); });
+
+  $('salvar').onclick = ()=>{
+    const v = $('novoServidor').value.trim();
+    $('okMsg').textContent=''; $('erroMsg').textContent='';
+    if(!/^https:\/\/.+/.test(v)){ $('erroMsg').textContent='Digite um endereço completo começando com https://'; return; }
+    localStorage.setItem('fenixp2p_servidor', v);
+    $('atual').textContent = atual();
+    $('okMsg').textContent='Servidor salvo neste aparelho.';
+  };
+  $('padrao').onclick = ()=>{
+    localStorage.removeItem('fenixp2p_servidor');
+    $('atual').textContent = atual(); $('novoServidor').value='';
+    $('okMsg').textContent='Voltou ao servidor padrão.'; $('erroMsg').textContent='';
+  };
+  $('testar').onclick = async ()=>{
+    $('okMsg').textContent='Testando...'; $('erroMsg').textContent='';
+    try{
+      const r = await fetch(atual(), {cache:'no-store'});
+      const j = await r.json();
+      const n = Object.keys(j.itens||j.canais||{}).length;
+      $('okMsg').textContent = 'Servidor respondendo: '+n+' conteúdo(s) na lista.';
+    }catch(e){ $('okMsg').textContent=''; $('erroMsg').textContent='Não consegui ler a lista nesse endereço.'; }
+  };
+})();
+</script>
+</body>
+</html>
