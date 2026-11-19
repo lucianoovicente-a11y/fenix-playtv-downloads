@@ -220,10 +220,9 @@
     if(client){ try{client.destroy();}catch(e){} client=null; }
     client = new WebTorrent();
     client.on('error', ()=>{ $('status').textContent='Conteúdo indisponível no momento.'; });
-    torrent = client.add(item.torrent || item.magnet, t=>{
+    torrent = client.add(item.torrent || item.magnet, {strategy:'sequential'}, t=>{
       const file = t.files.find(f=>f.name.endsWith('.mp4')) || t.files[0];
       const v=$('video');
-      try{ file.select(); }catch(e){} // peças em ordem: toca enquanto carrega, sem baixar tudo antes
       file.renderTo(v, {autoplay:false});
       v.addEventListener('canplay', ()=>{ if(wantsPlay) v.play().catch(()=>{}); });
       t.on('done', ()=>{
