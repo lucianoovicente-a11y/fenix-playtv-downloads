@@ -222,16 +222,19 @@
     client.on('error', ()=>{ $('status').textContent='Conteúdo indisponível no momento.'; });
     torrent = client.add(item.torrent || item.magnet, {strategy:'sequential'}, t=>{
       const file = t.files.find(f=>f.name.endsWith('.mp4')) || t.files[0];
-      const v=$('video');
-      file.renderTo(v, {autoplay:false});
-      v.addEventListener('canplay', ()=>{ if(wantsPlay) v.play().catch(()=>{}); });
+      window._t=t; window._f=file;
       t.on('done', ()=>{
         $('status').textContent='Ao vivo via P2P';
-        file.getBlobURL((e,url)=>{ if(!e&&url){ blobPronto={url:url, nome:file.name}; $('btnBaixar').style.display='inline-block'; if(v.readyState===0){ v.src=url; if(wantsPlay) v.play().catch(()=>{}); } } });
+        file.getBlobURL((e,url)=>{ if(!e&&url){ blobPronto={url:url, nome:file.name}; } });
       });
-      $('status').textContent = 'Conectando à rede P2P...';
       t.on('wire', ()=>{ if($('video').paused) $('status').textContent='Ao vivo via P2P'; });
     });
+    // toca na hora por streaming progressivo; o torrent divide o tráfego entre quem assiste
+    const v=$('video');
+    v.src = item.arquivo;
+    v.addEventListener('canplay', ()=>{ if(wantsPlay) v.play().catch(()=>{}); });
+    if(wantsPlay){ v.play().catch(()=>{}); }
+    $('status').textContent = 'Ao vivo via P2P';
     let stall=0;
     clearInterval(statsTimer);
     statsTimer = setInterval(()=>{
