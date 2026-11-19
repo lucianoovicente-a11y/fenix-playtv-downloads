@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fênix Play TV — P2P</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: radial-gradient(ellipse at 50% 30%, #12305e 0%, #091425 65%, #050b16 100%);
+    color:#fff; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .logo { width:130px; height:130px; object-fit:contain; margin-bottom:10px; filter: drop-shadow(0 0 18px rgba(255,140,0,.55)); }
+  h1 {
+    font-size:30px; letter-spacing:2px; margin-bottom:4px; text-align:center;
+    background: linear-gradient(90deg,#ffb300,#ff6a00,#ffb300);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow: 0 0 22px rgba(255,140,0,.25);
+  }
+  .p2ptag {
+    font-size:14px; letter-spacing:6px; color:#7fb3ff; margin-bottom:34px; font-weight:600;
+    border:1px solid rgba(127,179,255,.35); border-radius:999px; padding:6px 18px;
+  }
+  .card {
+    background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+    border-radius:22px; padding:30px 28px; width:min(420px, 92vw); text-align:center;
+    box-shadow: 0 12px 40px rgba(0,0,0,.45); backdrop-filter: blur(6px);
+  }
+  .lbl { font-size:17px; color:#dfe9f5; margin-bottom:14px; }
+  input.codigo {
+    width:100%; font-size:34px; text-align:center; letter-spacing:10px; padding:14px 10px 14px 20px;
+    border-radius:14px; border:2px solid rgba(255,179,0,.55); background:rgba(0,0,0,.35); color:#ffd88a;
+    outline:none; margin-bottom:18px; font-weight:700;
+  }
+  input.codigo:focus { border-color:#ffb300; box-shadow:0 0 0 3px rgba(255,179,0,.25); }
+  .btn {
+    display:inline-block; width:100%; font-size:20px; font-weight:700; letter-spacing:1px;
+    padding:14px 0; border:none; border-radius:14px; cursor:pointer; color:#1a0e00;
+    background: linear-gradient(180deg,#ffc23c,#ff8a00); box-shadow:0 6px 18px rgba(255,138,0,.35);
+  }
+  .btn:active { transform:scale(.97); }
+  .btn.sec { background: rgba(255,255,255,.12); color:#fff; box-shadow:none; font-size:16px; padding:11px 0; margin-top:12px; }
+  .erro { color:#ff8a80; margin-top:14px; font-size:15px; min-height:20px; }
+  /* player */
+  #playerWrap { display:none; width:100vw; height:100vh; flex-direction:column; background:#000; }
+  #topbar {
+    display:flex; align-items:center; gap:12px; padding:10px 14px;
+    background: rgba(9,20,37,.92); border-bottom:1px solid rgba(255,255,255,.1);
+  }
+  #topbar .t { font-size:16px; font-weight:600; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #voltar { background:rgba(255,255,255,.12); color:#fff; border:none; border-radius:10px; padding:8px 16px; font-size:15px; cursor:pointer; }
+  #videoBox { flex:1; display:flex; align-items:center; justify-content:center; min-height:0; }
+  video { width:100%; height:100%; object-fit:contain; background:#000; }
+  #stats {
+    display:flex; justify-content:center; gap:26px; padding:10px; font-size:13.5px; color:#9fc1e8;
+    background: rgba(9,20,37,.92); border-top:1px solid rgba(255,255,255,.08);
+  }
+  #stats b { color:#ffd88a; font-weight:700; }
+  #status { padding:6px; text-align:center; font-size:13px; color:#7fb3ff; background:rgba(9,20,37,.92); }
+  .loading { margin-top:16px; font-size:15px; color:#9fc1e8; }
+  .spin { display:inline-block; width:18px; height:18px; border:3px solid rgba(255,179,0,.3); border-top-color:#ffb300; border-radius:50%; animation:sp 0.9s linear infinite; vertical-align:-4px; margin-right:8px; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div id="codeScreen" class="card" style="display:flex; flex-direction:column; align-items:center;">
+    <img class="logo" src="../scripts/assets/fenix_logo.png" alt="Fênix" onerror="this.style.display='none'">
+    <h1>FÊNIX PLAY TV</h1>
+    <div class="p2ptag">P2P</div>
+    <div class="lbl">Digite o código do conteúdo</div>
+    <input id="codigo" class="codigo" type="tel" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="•••">
+    <button class="btn" id="entrar">ASSISTIR</button>
+    <div class="erro" id="erro"></div>
+    <div class="loading" id="loading" style="display:none;"><span class="spin"></span>Conectando...</div>
+  </div>
+
+  <div id="playerWrap">
+    <div id="topbar">
+      <button id="voltar">◀ Voltar</button>
+      <div class="t" id="titulo"></div>
+    </div>
+    <div id="videoBox"><video id="video" controls playsinline></video></div>
+    <div id="status">Conectando à rede P2P...</div>
+    <div id="stats">
+      <span>Pessoas compartilhando: <b id="peers">0</b></span>
+      <span>Velocidade: <b id="speed">0</b></span>
+      <span>Baixado: <b id="down">0</b></span>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/webtorrent@2.8.4/webtorrent.min.js"></script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const codeScreen=$('codeScreen'), playerWrap=$('playerWrap'), erro=$('erro'), loading=$('loading');
+  let client=null, torrent=null, reg=null, statsTimer=null;
+
+  fetch('canais.json', {cache:'no-store'}).then(r=>r.json()).then(j=>{ reg=j.canais||{}; }).catch(()=>{ reg={}; });
+
+  function fmt(n){ if(n>1048576) return (n/1048576).toFixed(1)+' MB/s'; if(n>1024) return (n/1024).toFixed(0)+' KB/s'; return n+' B/s'; }
+  function fmtB(n){ if(n>1073741824) return (n/1073741824).toFixed(2)+' GB'; if(n>1048576) return (n/1048576).toFixed(1)+' MB'; return (n/1024).toFixed(0)+' KB'; }
+
+  function entrar(){
+    const cod = $('codigo').value.trim();
+    erro.textContent='';
+    if(!cod){ erro.textContent='Digite o código.'; return; }
+    if(!reg || !reg[cod]){ erro.textContent='Código não encontrado. Confira e tente de novo.'; return; }
+    loading.style.display='block';
+    const item = reg[cod];
+    abrirPlayer(item);
+  }
+
+  function abrirPlayer(item){
+    $('titulo').textContent = item.titulo;
+    codeScreen.style.display='none'; playerWrap.style.display='flex';
+    if(client){ try{client.destroy();}catch(e){} }
+    client = new WebTorrent();
+    client.on('error', ()=>{ $('status').textContent='Conteúdo indisponível no momento.'; });
+    torrent = client.add(item.magnet, t=>{
+      const file = t.files.find(f=>f.name.endsWith('.mp4')) || t.files[0];
+      file.renderTo($('video'), {autoplay:true, muted:false}, err=>{
+        if(err){ $('video').src = file.getBlobURL ? '' : ''; }
+      });
+      $('status').textContent = 'Carregando vídeo via P2P...';
+      t.on('done', ()=>{ $('status').textContent='Download concluído. Compartilhando com outras pessoas.'; });
+      t.on('wire', ()=>{ $('status').textContent='Assistindo via P2P — quanto mais gente, mais leve fica para o servidor.'; });
+    });
+    let stall=0;
+    statsTimer = setInterval(()=>{
+      if(!torrent) return;
+      $('peers').textContent = torrent.numPeers;
+      $('speed').textContent = fmt(torrent.downloadSpeed);
+      $('down').textContent = fmtB(torrent.downloaded);
+      if(torrent.downloaded>0 || torrent.numPeers>0){ stall=0; loading.style.display='none'; }
+      else if(++stall>=15){ $('status').textContent='Ainda conectando... aguarde um instante.'; }
+    },1000);
+    $('video').addEventListener('playing', ()=>{ $('status').textContent=''; });
+  }
+
+  function voltar(){
+    clearInterval(statsTimer);
+    if(client){ try{client.destroy();}catch(e){} client=null; torrent=null; }
+    $('video').pause(); $('video').removeAttribute('src'); $('video').load();
+    playerWrap.style.display='none'; codeScreen.style.display='flex';
+    loading.style.display='none'; $('codigo').value=''; $('codigo').focus();
+  }
+
+  $('entrar').onclick = entrar;
+  $('voltar').onclick = voltar;
+  $('codigo').addEventListener('keydown', e=>{ if(e.key==='Enter') entrar(); });
+  $('codigo').focus();
+})();
+</script>
+</body>
+</html>
