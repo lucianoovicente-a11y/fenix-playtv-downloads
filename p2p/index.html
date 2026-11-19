@@ -134,9 +134,9 @@
     <div id="videoBox"><video id="video" controls playsinline></video><div id="playOverlay"><div id="playBtn">▶</div><div class="playTxt">Toque para assistir</div></div></div>
     <div id="status">Conectando à rede P2P...</div>
     <div id="stats">
+      <span>Ao vivo via P2P</span>
       <span>Pessoas compartilhando: <b id="peers">0</b></span>
-      <span>Velocidade: <b id="speed">0</b></span>
-      <span>Baixado: <b id="down">0</b></span>
+      <button id="btnBaixar" style="display:none; background:rgba(255,179,0,.2); border:1px solid rgba(255,179,0,.5); color:#ffd88a; border-radius:10px; padding:5px 14px; font-size:13px; cursor:pointer;">⬇ Baixar conteúdo</button>
     </div>
   </div>
 
@@ -209,40 +209,53 @@
     });
   }
 
+  let wantsPlay=false, blobPronto=null, itemAtual=null;
   function abrirPlayer(item){
+    itemAtual = item;
     $('titulo').textContent = item.titulo;
     codeScreen.style.display='none'; catalogWrap.style.display='none'; playerWrap.style.display='flex';
     $('playOverlay').style.display='flex';
+    blobPronto=null;
+    $('btnBaixar').style.display='inline-block';
     if(client){ try{client.destroy();}catch(e){} client=null; }
     client = new WebTorrent();
     client.on('error', ()=>{ $('status').textContent='Conteúdo indisponível no momento.'; });
     torrent = client.add(item.torrent || item.magnet, t=>{
       const file = t.files.find(f=>f.name.endsWith('.mp4')) || t.files[0];
       const v=$('video');
-      try{ const pl=t.pieceLength; t.select(0, Math.min(pl*8, t.length)); }catch(e){}
+      try{ file.select(); }catch(e){} // peças em ordem: toca enquanto carrega, sem baixar tudo antes
       file.renderTo(v, {autoplay:false});
+      v.addEventListener('canplay', ()=>{ if(wantsPlay) v.play().catch(()=>{}); });
       t.on('done', ()=>{
-        $('status').textContent='Download concluído. Compartilhando com outras pessoas.';
-        if(v.readyState===0){ file.getBlobURL((e,url)=>{ if(!e&&url && v.readyState===0) v.src=url; }); }
+        $('status').textContent='Ao vivo via P2P';
+        file.getBlobURL((e,url)=>{ if(!e&&url){ blobPronto={url:url, nome:file.name}; $('btnBaixar').style.display='inline-block'; if(v.readyState===0){ v.src=url; if(wantsPlay) v.play().catch(()=>{}); } } });
       });
-      $('status').textContent = 'Carregando vídeo via P2P...';
-      t.on('wire', ()=>{ $('status').textContent='Assistindo via P2P — quanto mais gente, mais leve fica para o servidor.'; });
+      $('status').textContent = 'Conectando à rede P2P...';
+      t.on('wire', ()=>{ if($('video').paused) $('status').textContent='Ao vivo via P2P'; });
     });
     let stall=0;
     clearInterval(statsTimer);
     statsTimer = setInterval(()=>{
       if(!torrent) return;
       $('peers').textContent = torrent.numPeers;
-      $('speed').textContent = fmt(torrent.downloadSpeed);
-      $('down').textContent = fmtB(torrent.downloaded);
       if(torrent.downloaded>0 || torrent.numPeers>0){ stall=0; loading.style.display='none'; }
       else if(++stall>=15){ $('status').textContent='Ainda conectando... aguarde um instante.'; }
     },1000);
   }
 
-  $('playOverlay').addEventListener('click', ()=>{ const v=$('video'); v.play().catch(()=>{}); });
+  $('btnBaixar').addEventListener('click', ()=>{
+    const a=document.createElement('a');
+    if(blobPronto){ a.href=blobPronto.url; a.download=blobPronto.nome; }
+    else if(itemAtual && itemAtual.arquivo){ a.href=itemAtual.arquivo; a.download=''; }
+    else if(itemAtual && itemAtual.torrent){ a.href=itemAtual.torrent; a.download=''; }
+    else return;
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  $('playOverlay').addEventListener('click', ()=>{ wantsPlay=true; const v=$('video'); v.play().catch(()=>{}); });
   $('video').addEventListener('play', ()=>{ $('playOverlay').style.display='none'; });
   $('video').addEventListener('playing', ()=>{ $('status').textContent=''; });
+  $('video').addEventListener('pause', ()=>{ const v=$('video'); if(!v.ended) $('playOverlay').style.display='flex'; });
 
   function voltar(){
     clearInterval(statsTimer);
