@@ -61,6 +61,10 @@
   #stats b { color:#ffd88a; font-weight:700; }
   #status { padding:6px; text-align:center; font-size:13px; color:#7fb3ff; background:rgba(9,20,37,.92); }
   .loading { margin-top:16px; font-size:15px; color:#9fc1e8; }
+  #playOverlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,.55); cursor:pointer; z-index:5; }
+  #playBtn { width:90px; height:90px; border-radius:50%; background:linear-gradient(180deg,#ffc23c,#ff8a00); color:#1a0e00; font-size:40px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 30px rgba(255,138,0,.6); padding-left:8px; }
+  .playTxt { margin-top:14px; font-size:16px; color:#ffd88a; }
+  #videoBox { position:relative; }
   .spin { display:inline-block; width:18px; height:18px; border:3px solid rgba(255,179,0,.3); border-top-color:#ffb300; border-radius:50%; animation:sp 0.9s linear infinite; vertical-align:-4px; margin-right:8px; }
   @keyframes sp { to { transform:rotate(360deg); } }
 </style>
@@ -82,7 +86,7 @@
       <button id="voltar">◀ Voltar</button>
       <div class="t" id="titulo"></div>
     </div>
-    <div id="videoBox"><video id="video" controls playsinline></video></div>
+    <div id="videoBox"><video id="video" controls playsinline></video><div id="playOverlay"><div id="playBtn">▶</div><div class="playTxt">Toque para assistir</div></div></div>
     <div id="status">Conectando à rede P2P...</div>
     <div id="stats">
       <span>Pessoas compartilhando: <b id="peers">0</b></span>
@@ -125,9 +129,12 @@
     client.on('error', ()=>{ $('status').textContent='Conteúdo indisponível no momento.'; });
     torrent = client.add(item.torrent || item.magnet, t=>{
       const file = t.files.find(f=>f.name.endsWith('.mp4')) || t.files[0];
-      file.renderTo($('video'), {autoplay:true, muted:false}, err=>{
-        if(err){ $('video').src = file.getBlobURL ? '' : ''; }
-      });
+      const v=$('video');
+      file.renderTo(v, {autoplay:false}, err=>{ if(err){ $('status').textContent='Preparando o vídeo...'; } });
+      const hideOv=()=>{ $('playOverlay').style.display='none'; };
+      $('playOverlay').addEventListener('click', ()=>{ v.play().catch(()=>{}); });
+      v.addEventListener('play', hideOv);
+      v.addEventListener('click', ()=>{ if(v.paused) v.play().catch(()=>{}); });
       $('status').textContent = 'Carregando vídeo via P2P...';
       t.on('done', ()=>{ $('status').textContent='Download concluído. Compartilhando com outras pessoas.'; });
       t.on('wire', ()=>{ $('status').textContent='Assistindo via P2P — quanto mais gente, mais leve fica para o servidor.'; });
