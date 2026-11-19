@@ -62,7 +62,13 @@ switch ($acao) {
         $nome = trim($in['nome'] ?? '');
         if ($nome === '') resp(['ok' => false, 'erro' => 'Digite o nome.']);
         $d = carregar($DATA);
-        do { $cod = strval(random_int(1000, 9999)); } while (isset($d['usuarios'][$cod]));
+        $cod_pedido = preg_replace('/[^a-zA-Z0-9_-]/', '', strval($in['codigo'] ?? ''));
+        if ($cod_pedido !== '') {
+            if (isset($d['usuarios'][$cod_pedido])) resp(['ok' => true, 'codigo' => $cod_pedido, 'nome' => $d['usuarios'][$cod_pedido]['nome'] ?? $nome, 'existente' => true]);
+            $cod = $cod_pedido;
+        } else {
+            do { $cod = strval(random_int(1000, 9999)); } while (isset($d['usuarios'][$cod]));
+        }
         $d['usuarios'][$cod] = ['nome' => $nome, 'criado' => date('Y-m-d H:i'), 'bloqueado' => false];
         salvar($DATA, $d);
         resp(['ok' => true, 'codigo' => $cod, 'nome' => $nome]);
