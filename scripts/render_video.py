@@ -37,8 +37,8 @@ CONFIG = {
         "conmebol.libertadores": "ESPN 1",
         "conmebol.sudamericana": "ESPN 2",
     },
-    "seg_pre": 1.2,     # página sem o selo de hora (s)
-    "seg_full": 4.3,    # página completa (s)
+    "seg_pre": 1.5,     # página sem o selo de hora (s)
+    "seg_full": 5.5,    # página completa (s) - texto parado ~5s +2s por jogo (pedido 14/11)
     "fps": 30,
 }
 
@@ -302,6 +302,21 @@ def pagina_final(data_alvo, tema="agenda"):
         f_l = text_fit(dd, ln, font("BarlowCondensed-Bold.ttf", k(20)), W - k(70))
         dd.text((W / 2 - dd.textlength(ln, font=f_l) / 2, y), ln, font=f_l, fill=(235, 240, 245))
         y = dd.textbbox((0, y), ln, font=f_l)[3] + k(12)
+    # marca: nome centralizado + logo grande acima do número de WhatsApp (pedido 14/11)
+    f_b = font("Anton-Regular.ttf", k(30))
+    bt = CONFIG["brand"]
+    y += k(28)
+    dd.text((W / 2 - dd.textlength(bt, font=f_b) / 2, y), bt, font=f_b, fill=(255, 255, 255))
+    y = dd.textbbox((0, y), bt, font=f_b)[3] + k(16)
+    try:
+        lg = Image.open(os.path.join(A, "fenix_logo.png")).convert("RGBA")
+        lh = min(k(180), k(878) - y)
+        if lh > k(60):
+            lw = int(lg.width * lh / lg.height)
+            lg = lg.resize((lw, lh), Image.LANCZOS)
+            img.alpha_composite(lg, ((W - lw) // 2, y + (k(878) - y - lh) // 2))
+    except Exception as e:
+        print("logo final falhou", e)
     # rodapé
     dd.rectangle([0, k(888), W, H], fill=CONFIG["rodape_cor"])
     f_w = font("Anton-Regular.ttf", k(20))
@@ -346,7 +361,7 @@ def main():
     pf = pagina_final(data_alvo, tema=args.tema)
     pfin = os.path.join(FR, "p99_final.png")
     pf.convert("RGB").save(pfin)
-    manifest += [(pfin, 5.0)]
+    manifest += [(pfin, 15.0)]  # quadro final parado 15s (pedido 14/11)
     with open(os.path.join(FR, "manifest.json"), "w") as f:
         json.dump(manifest, f)
     print("frames:", len(manifest))
